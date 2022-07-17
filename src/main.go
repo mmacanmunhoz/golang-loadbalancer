@@ -14,32 +14,32 @@ type Server interface {
 	Serve(rw http.ResponseWriter, r *http.Request)
 }
 
-type simpleServer struct {
+type SimpleServer struct {
 	addr  string
 	proxy httputil.ReverseProxy
 }
 
 type LoadBalancer struct {
-	port           string
-	rounRobinCount int
-	servers        []Server
+	port            string
+	roundRobinCount int
+	servers         []Server
 }
 
 func NewLoadBalancer(port string, servers []Server) *LoadBalancer {
 
 	return &LoadBalancer{
-		port:           port,
-		rounRobinCount: 0,
-		servers:        servers,
+		port:            port,
+		roundRobinCount: 0,
+		servers:         servers,
 	}
 
 }
 
-func newSimpleServer(addr string) *simpleServer {
+func NewSimpleServer(addr string) *SimpleServer {
 	serverUrl, err := url.Parse(addr)
 	handleErr(err)
 
-	return &simpleServer{
+	return &SimpleServer{
 		addr:  addr,
 		proxy: *httputil.NewSingleHostReverseProxy(serverUrl),
 	}
@@ -52,25 +52,25 @@ func handleErr(err error) {
 	}
 }
 
-func (s *simpleServer) Address() string { return s.addr }
+func (s *SimpleServer) Address() string { return s.addr }
 
-func (s *simpleServer) IsAlive() bool { return true }
+func (s *SimpleServer) IsAlive() bool { return true }
 
-func (s *simpleServer) Serve(rw http.ResponseWriter, req *http.Request) {
+func (s *SimpleServer) Serve(rw http.ResponseWriter, req *http.Request) {
 	s.proxy.ServeHTTP(rw, req)
 }
 
 func (lb *LoadBalancer) getNexAvailableServer() Server {
-	server := lb.servers[lb.rounRobinCount%len(lb.servers)]
+	server := lb.servers[lb.roundRobinCount%len(lb.servers)]
 	for !server.IsAlive() {
-		lb.rounRobinCount++
-		server = lb.servers[lb.rounRobinCount%len(lb.servers)]
+		lb.roundRobinCount++
+		server = lb.servers[lb.roundRobinCount%len(lb.servers)]
 	}
-	lb.rounRobinCount++
+	lb.roundRobinCount++
 	return server
 }
 
-func (lb *LoadBalancer) serverProxy(rw http.ResponseWriter, req *http.Request) {
+func (lb *LoadBalancer) ServerProxy(rw http.ResponseWriter, req *http.Request) {
 	targetServer := lb.getNexAvailableServer()
 	fmt.Printf("forwarding request to address %q\n", targetServer.Address())
 	targetServer.Serve(rw, req)
@@ -78,14 +78,14 @@ func (lb *LoadBalancer) serverProxy(rw http.ResponseWriter, req *http.Request) {
 
 func main() {
 	servers := []Server{
-		newSimpleServer("https://www.facebook.com"),
-		newSimpleServer("http://www.bing.com"),
-		newSimpleServer("http://www.duckduckgo.com"),
+		NewSimpleServer("https://www.facebook.com"),
+		NewSimpleServer("https://uol.com.br"),
+		NewSimpleServer("http://www.duckduckgosss.com"),
 	}
 
 	lb := NewLoadBalancer("8000", servers)
 	handleRedirect := func(rw http.ResponseWriter, req *http.Request) {
-		lb.serverProxy(rw, req)
+		lb.ServerProxy(rw, req)
 	}
 
 	http.HandleFunc("/", handleRedirect)

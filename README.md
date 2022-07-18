@@ -6,3 +6,4 @@ The URL's can be changed as needed, as a tip you can upload your docker compose 
 
 An ideal scenario would be to test your application's cache, test memory consumption or even test CPU consumption by testing locally before uploading the application to your environment.
 
+Please release port 8000 for testing.
